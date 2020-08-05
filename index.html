@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Load required Bootstrap and BootstrapVue CSS -->
+    <link type="text/css" rel="stylesheet" href="http://unpkg.com/bootstrap/dist/css/bootstrap.min.css" />
+    <link type="text/css" rel="stylesheet" href="http://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.min.css" />
+    
+    <link type="text/css" rel="stylesheet" href="./style.css" />
+
+    <title>GFL Protocol Assimilation Simulator v0.0.1</title>
+  </head>
+  <body>
+    <div v-cloak id="app" class="container-fluid">
+      <b-alert show variant="warning" class="mt-2">DISCLAIMER: The results of this page may be wrong. There is no warranty provided for any choices you make based on this page.</b-alert>
+ 
+      <div class="row">
+        <div class="col-md-4 px-lg-5">
+          <div class="p-2">
+            <b-tabs>
+              <b-tab title="About" active class="p-2">
+                <h1>Protocol Assimilation Simulator v0.0.1</h1>
+                
+                <p>
+                  This webpage is a <a href="https://en.wikipedia.org/wiki/Monte_Carlo_method">Monte Carlo simulator</a> for the "Protocol Assimilation"
+                  mechanic in Girls Frontline. The goal is to allow players to test strategies for capturing Sangvis Ferri units.
+                </p>
+              </b-tab>
+              
+              <b-tab title="Strategies" class="p-2">
+                <b-alert show class="mb-2">
+                  There is no built-in strategy editor right now. If you want to add a new strategy now, you need to fork the project and edit <code>simulator_constants.js</code>.
+                  If you find a great strategy, feel free to file an issue or a pull request :).
+                </b-alert>
+              
+                <div style="overflow: scroll;">
+                  <b-table :items="strategies">
+                    <template v-slot:cell(prioritizedActions)="data">
+                      <b-list-group>
+                        <b-list-group-item v-for="action in data.item.prioritizedActions">
+                          {{describeSimulatorAction(action)}}
+                        </b-list-group-item>
+                      </b-list-group>
+                    </template>
+                  </b-table>
+                </div>
+              </b-tab>
+              
+              <b-tab title="Player Settings" class="p-2">
+                <player-settings v-bind:settings="playerSettings">
+                </player-settings>
+              </b-tab>
+              
+              <b-tab title="Simulator Settings" class="p-2">
+                <simulator-settings v-bind:settings="simulatorSettings">
+                </simulator-settings>
+              </b-tab>
+              
+              <b-tab title="System Settings" class="p-2">
+                <system-settings v-bind:settings="systemSettings">
+                </system-settings>
+              </b-tab>
+              
+              <b-tab title="Glossary" class="p-2">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Term (In Chinese)</th>
+                      <th scope="col">Definition</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Protocol Assimilation (协议同归)</td>
+                      <td>The name of the system for capturing Sangvis Ferri units and turning them into "Coalition" units.</td>
+                    </tr>
+                    <tr>
+                      <td>"Pool"/"Box"</td>
+                      <td>
+                        The pool of SF units that can be captured. As of 2020/08, these pools have always had one 3* (ringleader), 28 2*,
+                        and 71 1* units. The player can only reset the pool after capturing the ringleader.
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>"Map"</td>
+                      <td>A display of three random units from the current remaining pool that the player can use an EMP on to attempt to capture.</td>
+                    </tr>
+                    <tr>
+                      <td>EMP (电子脉冲)</td>
+                      <td>
+                        Free resource generated from the Protocol Assimilation Command Center for attempting to capture SF units.
+                        At max facility level, these are generated every 12 hours, and have a softcap of 14.
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Extra EMP (超导脉冲)</td>
+                      <td>EMPs obtained from missions, achievements, and events. These are stored outside of the softcap.</td>
+                    </tr>
+                    <tr>
+                      <td>Cooperation Request Contract (协力委托书)</td>
+                      <td>
+                        Contracts for capturing random units from the remaining pool, not limited to the current map.
+                        Some players refer to this as "Super EMP" or "Svarogs".
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                
+                <p>
+                  For more information, please read the following infographics:
+                  <ul>
+                    <li><a href="https://imgur.com/a/sYOSKQV">https://imgur.com/a/sYOSKQV</a></li>
+                    <li><a href="https://imgur.com/a/T95b450">https://imgur.com/a/T95b450</a></li>
+                    <li><a href="https://imgur.com/a/XEipAu0">https://imgur.com/a/XEipAu0</a></li>
+                  </ul>
+                </p>
+              </b-tab>
+            </b-tabs>
+          </div>
+        </div>
+        
+        <div class="col-md-8 px-lg-5">
+          <div class="p-2">
+            <b-form inline>
+              <label class="mr-sm-2" for="pool-select">Pool: </label>
+              <b-form-select id="pool-select" v-model="chosenPool" :options="poolOptions" class="mr-sm-2 mb-2 mb-sm-0"></b-form-select>
+              <b-button variant="primary" v-on:click="simulate" class="ml-auto">Simulate</b-button>
+            </b-form>
+            
+            <hr />
+            
+            <div v-if="hasSimulationResults">
+              <div class="py-2">
+                <h2>Probability of Getting At Least One Ringleader</h2>
+                
+                <results-graph
+                  x-axis-label="EMPs Used"
+                  y-axis-label="P(At Least One Ringleader Captured)"
+                  :chart-data="ringleaderProbabilityChartData">
+                </results-graph>
+                
+                <b-card no-body class="mt-2">
+                  <b-card-header header-tag="header" class="p-1" role="tab">
+                    <b-button block v-b-toggle.ringleader-prob-table-data variant="info">Table Data</b-button>
+                  </b-card-header>
+                  <b-collapse id="ringleader-prob-table-data" accordion="ringleader-prob-table-data-accordion" role="tabpanel">
+                    <b-card-body>
+                      <b-card-text>
+                        <p>
+                          The number in the parentheses is the standard deviation of <code>P(At Least One Ringleader Captured)</code>,
+                          with population <code>N</code> equal to the number of result buckets.
+                        </p>
+                        
+                        <div style="overflow-x: scroll;">
+                          <b-table striped hover :items="ringleaderProbabilityTableData"></b-table>
+                        </div>
+                      </b-card-text>
+                    </b-card-body>
+                  </b-collapse>
+                </b-card>
+              </div>
+            
+              <div class="py-2">
+                <h2>Median Number of Remaining Units in the First Pool</h2>
+                
+                <p>If an iteration has reset the pool once, then its "Number of Remaining Units in the First Pool" is counted as zero.</p>
+                
+                <results-graph
+                  x-axis-label="EMPs Used"
+                  y-axis-label="Number of Remaining Units in the First Pool"
+                  :chart-data="medianRemainingPoolSizesChartData">
+                </results-graph>
+              </div>
+            
+              <div class="py-2">
+                <h2>Median Cooperative Request Contracts Needed to Get At Least One Ringleader</h2>
+                
+                <p>
+                  If an iteration has reset the pool once, then its "Cooperative Request Contracts Needed" is counted as zero.
+                  Otherwise, this is the number of Cooperative Request Contracts necessary to have a 50% chance to capturing the ringleader.<br/>
+                  <code>[Cooperative Request Contracts Needed] = floor(log(0.5) / log(1 - 1 / [Number of Remaining Units in the First Pool]))</code>
+                </p>
+                
+                <results-graph
+                  x-axis-label="EMPs Used"
+                  y-axis-label="Cooperative Request Contracts Needed"
+                  :chart-data="medianSvarogsNeededChartData">
+                </results-graph>
+              </div>
+            
+              <div class="py-2">
+                <h2>Expected Number of Captured Ringleader(s)</h2>
+                
+                <p>This may be greater than one, which indicates that duplicates may be captured.</p>
+                
+                <results-graph
+                  x-axis-label="EMPs Used"
+                  y-axis-label="E(Captured Ringleaders)"
+                  :chart-data="ringleaderExpectedValueChartData">
+                </results-graph>
+              </div>
+              
+              <div class="py-2">
+                <h2>Expected Number of Captured Manticore(s)</h2>
+                
+                <p>This may be greater than one, which indicates that duplicates may be captured.</p>
+                
+                <results-graph
+                  x-axis-label="EMPs Used"
+                  y-axis-label="E(Captured Manticores)"
+                  :chart-data="manticoreExpectedValueChartData">
+                </results-graph>
+              </div>
+              
+              <div class="py-2">
+                <h2>Expected Number of Captured 2* Units(s)</h2>
+                
+                <p>This may be greater than one, which indicates that duplicates may be captured.</p>
+                
+                <results-graph
+                  x-axis-label="EMPs Used"
+                  y-axis-label="E(Captured 2*s)"
+                  :chart-data="twoStarExpectedValueChartData">
+                </results-graph>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="text/x-template" id="player-settings-template">
+      <div>
+        <b-form-group
+          id="initialemps-group"
+          label="Initial EMPs:"
+          label-for="initialemps">
+          <b-form-input
+            id="initialemps"
+            v-model.number="settings.initialEmps"
+            type="number" 
+            aria-describedby="initialemps-description"
+            :state="initialEmpsValidation"></b-form-input>
+          <b-form-text id="initialemps-description">
+            This is the number of EMPs stored in the softcap from previous pools.
+            The default is {{initialSettings.initialEmps}}.
+            Should be nonnegative integer (0, 1, 2, 3, ...).
+          </b-form-text>
+          <b-form-invalid-feedback :state="initialEmpsValidation">
+            Must be a nonnegative integer!
+          </b-form-invalid-feedback>
+        </b-form-group>
+        
+        <b-form-group
+          id="initialextraemps-group"
+          label="Extra EMPs:"
+          label-for="initialextraemps">
+          <b-form-input
+            id="initialextraemps"
+            v-model.number="settings.initialExtraEmps"
+            type="number" 
+            aria-describedby="initialextraemps-description"
+            :state="initialExtraEmpsValidation"></b-form-input>
+          <b-form-text id="initialextraemps-description">
+            These are EMPs stored outside of the softcap.
+            The default is {{initialSettings.initialExtraEmps}}.
+            Should be nonnegative (0, 1, 2, 3, ...).
+          </b-form-text>
+          <b-form-invalid-feedback :state="initialExtraEmpsValidation">
+            Must be a nonnegative integer!
+          </b-form-invalid-feedback>
+        </b-form-group>
+        
+        <b-form-group
+          id="extraempusagetiming-group"
+          label="Extra EMP Usage Timing:"
+          label-for="extraempusagetiming">
+          <b-form-select v-model="settings.extraEmpUsageTiming" :options="extraEmpUsageOptions"></b-form-select>
+        </b-form-group>
+      </div>
+    </script>
+
+    <script type="text/x-template" id="simulator-settings-template">
+      <div>
+        <b-form-group
+          id="numruns-group"
+          label="Number of Iterations per Simulation:"
+          label-for="numruns">
+          <b-form-input
+            id="numruns"
+            v-model.number="settings.numRuns"
+            type="number" 
+            aria-describedby="numruns-description"
+            :state="numRunsValidation"></b-form-input>
+          <b-form-text id="numruns-description">
+            The default is {{initialSettings.numRuns}}.
+            Should be positive integer (1, 2, 3, ...).
+          </b-form-text>
+          <b-form-invalid-feedback :state="numRunsValidation">
+            Must be a positive integer!
+          </b-form-invalid-feedback>
+        </b-form-group>
+        
+        <b-form-group
+          id="numrunbuckets-group"
+          label="Number of Result Buckets:"
+          label-for="numrunbuckets">
+          <b-form-input
+            id="numrunbuckets"
+            v-model.number="settings.numRunBuckets"
+            type="number" 
+            aria-describedby="numrunbuckets-description"
+            :state="numRunBucketsValidation"></b-form-input>
+          <b-form-text id="numrunbuckets-description">
+            This is the number of buckets that the results are grouped into. This is used to compute standard deviation.
+            The default is {{initialSettings.numRunBuckets}}.
+            Should be positive integer (1, 2, 3, ...).
+          </b-form-text>
+          <b-form-invalid-feedback :state="numRunBucketsValidation">
+            Must be a positive integer!
+          </b-form-invalid-feedback>
+        </b-form-group>
+      </div>
+    </script>
+    
+    <script type="text/x-template" id="system-settings-template">
+      <div>
+        <p>
+        These are constants of the Protocol Assimilation system. You can change these to test hypothetical improvements to the system.
+        </p>
+      
+        <b-form-group
+          id="daysperpool-group"
+          label="Number of Days per Pool:"
+          label-for="daysperpool">
+          <b-form-input
+            id="daysperpool"
+            v-model.number="settings.numDaysPerPool"
+            type="number" 
+            aria-describedby="daysperpool-description"
+            :state="numDaysPerPoolValidation"></b-form-input>
+          <b-form-text id="daysperpool-description">
+            The default is {{initialSettings.numDaysPerPool}}.
+            Should be positive integer (1, 2, 3, ...).
+          </b-form-text>
+          <b-form-invalid-feedback :state="numDaysPerPoolValidation">
+            Must be a positive integer!
+          </b-form-invalid-feedback>
+        </b-form-group>
+        
+        <b-form-group
+          id="daysperrefresh-group"
+          label="Days per Map Refresh:"
+          label-for="daysperrefresh">
+          <b-form-input
+            id="daysperrefresh"
+            v-model.number="settings.numDaysPerMapRefresh"
+            aria-describedby="daysperrefresh-description"
+            :state="numDaysPerRefreshValidation"></b-form-input>
+          <b-form-text id="daysperrefresh-description">
+            The default is {{initialSettings.numDaysPerMapRefresh}}.
+            Should be positive number (0.1, 1, 1.5, 3.1415, ...).
+          </b-form-text>
+          <b-form-invalid-feedback :state="numDaysPerRefreshValidation">
+            Must be a positive number!
+          </b-form-invalid-feedback>
+        </b-form-group>
+        
+        <b-form-group
+          id="mapsize-group"
+          label="Map Size:"
+          label-for="mapsize">
+          <b-form-input
+            id="mapsize"
+            type="number"
+            v-model.number="settings.mapSize"
+            aria-describedby="mapsize-description"
+            :state="mapSizeValidation"></b-form-input>
+          <b-form-text id="mapsize-description">
+            The default is {{initialSettings.mapSize}}.
+            Should be positive integer (1, 2, 3, ...).
+          </b-form-text>
+          <b-form-invalid-feedback :state="mapSizeValidation">
+            Must be a positive integer!
+          </b-form-invalid-feedback>
+        </b-form-group>
+        
+        <b-form-group
+          id="empsperday-group"
+          label="EMPs per Day:"
+          label-for="empsperday">
+          <b-form-input
+            id="empsperday"
+            v-model.number="settings.empsPerDay"
+            aria-describedby="empsperday-description"
+            :state="empsPerDayValidation"></b-form-input>
+          <b-form-text id="empsperday-description">
+            The default is {{initialSettings.empsPerDay}}.
+            Should be positive number (0.1, 2, 1.5, 3.1415, ...).
+          </b-form-text>
+          <b-form-invalid-feedback :state="empsPerDayValidation">
+            Must be a positive number!
+          </b-form-invalid-feedback>
+        </b-form-group>
+        
+        <b-form-group
+          id="empsoftcap-group"
+          label="EMP Softcap:"
+          label-for="empsoftcap">
+          <b-form-input
+            id="empsoftcap"
+            type="number"
+            v-model.number="settings.empSoftcap"
+            aria-describedby="empsoftcap-description"
+            :state="empSoftcapValidation"></b-form-input>
+          <b-form-text id="empsoftcap-description">
+            The default is {{initialSettings.empSoftcap}}.
+            Should be positive integer (1, 2, 3, ...).
+          </b-form-text>
+          <b-form-invalid-feedback :state="empSoftcapValidation">
+            Must be a positive integer!
+          </b-form-invalid-feedback>
+        </b-form-group>
+        
+        <b-form-group
+          id="1capprob-group"
+          label="1* EMP Capture Probability:"
+          label-for="1capprob">
+          <b-form-input
+            id="1capprob"
+            v-model.number="settings.captureProbabilities[0]"
+            aria-describedby="1capprob-description"
+            :state="oneStarCaptureProbabilityValidation"></b-form-input>
+          <b-form-text id="1capprob-description">
+            The default is {{initialSettings.captureProbabilities[0]}}.
+            Should be in (0, 1].
+          </b-form-text>
+          <b-form-invalid-feedback :state="oneStarCaptureProbabilityValidation">
+            Must be in (0, 1]!
+          </b-form-invalid-feedback>
+        </b-form-group>
+        
+        <b-form-group
+          id="2capprob-group"
+          label="2* EMP Capture Probability:"
+          label-for="2capprob">
+          <b-form-input
+            id="2capprob"
+            v-model.number="settings.captureProbabilities[1]"
+            aria-describedby="2capprob-description"
+            :state="twoStarCaptureProbabilityValidation"></b-form-input>
+          <b-form-text id="2capprob-description">
+            The default is {{initialSettings.captureProbabilities[1]}}.
+            Should be in (0, 1].
+          </b-form-text>
+          <b-form-invalid-feedback :state="twoStarCaptureProbabilityValidation">
+            Must be in (0, 1]!
+          </b-form-invalid-feedback>
+        </b-form-group>
+        
+        <b-form-group
+          id="3capprob-group"
+          label="3* EMP Capture Probability:"
+          label-for="3capprob">
+          <b-form-input
+            id="3capprob"
+            v-model.number="settings.captureProbabilities[2]"
+            aria-describedby="3capprob-description"
+            :state="threeStarCaptureProbabilityValidation"></b-form-input>
+          <b-form-text id="3capprob-description">
+            The default is {{initialSettings.captureProbabilities[2]}}.
+            Should be in (0, 1].
+          </b-form-text>
+          <b-form-invalid-feedback :state="threeStarCaptureProbabilityValidation">
+            Must be in (0, 1]!
+          </b-form-invalid-feedback>
+        </b-form-group>
+      </div>
+    </script>
+  
+    <!-- Load polyfills to support older browsers -->
+    <script src="http://polyfill.io/v3/polyfill.min.js?features=es2015%2CIntersectionObserver" crossorigin="anonymous"></script>
+
+    <!-- Load Vue followed by BootstrapVue -->
+    <!--<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script> -->
+    <script src="https://unpkg.com/vue@latest/dist/vue.min.js"></script>
+    <script src="https://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.min.js"></script>
+
+    <!-- Load the following for BootstrapVueIcons support -->
+    <!-- <script src="https://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue-icons.min.js"></script> -->
+
+    <!-- ChartJs and Vue-ChartJs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js"></script>
+    <script src="https://unpkg.com/vue-chartjs/dist/vue-chartjs.min.js"></script>
+    
+    <script src="https://unpkg.com/chartjs-plugin-colorschemes"></script>
+    
+    <!-- CUSTOM SCRIPT -->
+    <script src="./sf_constants.js"></script>
+    <script src="./simulator_constants.js"></script>
+    <script src="./simulator.js"></script>
+    <script src="./components.js"></script>
+    <script src="./index.js"></script>
+  </body>
+</html>
