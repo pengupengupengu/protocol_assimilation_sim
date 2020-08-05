@@ -36,7 +36,6 @@ const recordUsedEmpResults = function (results, runBucketNumber, usedEmpCount, b
         by_canonical_name: {},
         by_rarity: {},
         first_box_remaining_sizes: [],
-        num_svarogs_for_first_ringleader: [],
       }
     }
   }
@@ -53,9 +52,6 @@ const recordUsedEmpResults = function (results, runBucketNumber, usedEmpCount, b
   if (countUnitsWithRarity(capturedUnits, 3) > 0) {
     bucket.samples_with_at_least_one_ringleader++;
     total_stats.samples_with_at_least_one_ringleader++;
-    total_stats.num_svarogs_for_first_ringleader.push(0);
-  } else {
-    total_stats.num_svarogs_for_first_ringleader.push(Math.floor(Math.log(0.5) / Math.log(1 - 1 / remainingPool.length)));
   }
   total_stats.first_box_remaining_sizes.push(boxNumber == 1 ? remainingPool.length : 0);
   for (const capturedUnit of capturedUnits) {
@@ -234,8 +230,6 @@ const simulateStrategyResults = function (pool, strategy, playerSettings, simula
           / result.buckets.length);
     result.total_stats.first_box_remaining_sizes.sort();
     result.total_stats.median_first_box_remaining_sizes = result.total_stats.first_box_remaining_sizes[result.total_stats.first_box_remaining_sizes.length / 2];
-    result.total_stats.num_svarogs_for_first_ringleader.sort();
-    result.total_stats.median_svarogs_for_first_ringleader = result.total_stats.num_svarogs_for_first_ringleader[result.total_stats.num_svarogs_for_first_ringleader.length / 2];
   }
 
   console.log(results);

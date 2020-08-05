@@ -58,10 +58,14 @@ const app = new Vue({
         this.strategies,
         allStrategyResults,
         (total_stats) => total_stats.median_first_box_remaining_sizes);
-      this.medianSvarogsNeededChartData = makeChartDataWithDataByUsedEmpCount(
+      this.medianSvarogsNeededIfEmpFailedChartData = makeChartDataWithDataByUsedEmpCount(
         this.strategies,
         allStrategyResults,
-        (total_stats) => total_stats.median_svarogs_for_first_ringleader);
+        (total_stats) => Math.floor(Math.log(0.5) / Math.log(1 - 1 / total_stats.median_first_box_remaining_sizes)));
+      this.medianSvarogsNeededTotalChartData = makeChartDataWithDataByUsedEmpCount(
+        this.strategies,
+        allStrategyResults,
+        (total_stats) => Math.floor(Math.log(0.5 / (1 - total_stats.samples_with_at_least_one_ringleader / total_stats.samples)) / Math.log(1 - 1 / total_stats.median_first_box_remaining_sizes)));
       this.ringleaderExpectedValueChartData = makeChartDataWithDataByUsedEmpCount(
         this.strategies,
         allStrategyResults,

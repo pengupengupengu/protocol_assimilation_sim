@@ -198,7 +198,25 @@
                 <results-graph
                   x-axis-label="EMPs Used"
                   y-axis-label="Cooperative Request Contracts Needed"
-                  :chart-data="medianSvarogsNeededChartData">
+                  :chart-data="medianSvarogsNeededIfEmpFailedChartData">
+                </results-graph>
+              </div>
+            
+              <div class="py-2">
+                <h2>Median Cooperative Request Contracts Needed to Get At Least One Ringleader, Total</h2>
+                
+                <p>
+                  Again, this is the median number of contracts needed to have a 50% chance of capturing a ringleader.<br/>
+                  This stat accounts for the probability that EMPs will capture at least one ringleader.<br/>
+                  <code>
+                    P([X contracts captures a ringleader]) = P([Y EMPs failed to capture]) * P([X contracts captures a ringleader] | [Y EMPs failed to capture]) = 0.5
+                  </code>
+                </p>
+                
+                <results-graph
+                  x-axis-label="EMPs Used"
+                  y-axis-label="Cooperative Request Contracts Needed"
+                  :chart-data="medianSvarogsNeededTotalChartData">
                 </results-graph>
               </div>
             
