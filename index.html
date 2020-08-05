@@ -139,7 +139,7 @@
             
             <div v-if="hasSimulationResults">
               <div class="py-2">
-                <h2>Probability of Getting At Least One Ringleader</h2>
+                <h2>Probability of Getting At Least One Ringleader with Only EMPs</h2>
                 
                 <results-graph
                   x-axis-label="EMPs Used"
@@ -170,6 +170,9 @@
             
               <div class="py-2">
                 <h2>Median Number of Remaining Units in the First Pool</h2>
+                <p>
+                  <i>In other words, "how many Cooperative Request Contracts do I need if my luck is the worst?"</i>
+                </p>
                 
                 <p>If an iteration has reset the pool once, then its "Number of Remaining Units in the First Pool" is counted as zero.</p>
                 
@@ -180,6 +183,7 @@
                 </results-graph>
               </div>
             
+              <!--
               <div class="py-2">
                 <h2>Median Cooperative Request Contracts Needed to Get At Least One Ringleader, If EMPs Failed</h2>
                 
@@ -201,15 +205,24 @@
                   :chart-data="medianSvarogsNeededIfEmpFailedChartData">
                 </results-graph>
               </div>
+              -->
             
               <div class="py-2">
                 <h2>Median Cooperative Request Contracts Needed to Get At Least One Ringleader, Total</h2>
                 
                 <p>
+                  <i>In other words, "how many Cooperative Request Contracts do I need if my luck is medium?"</i>
+                </p>
+                <p>
                   Again, this is the median number of contracts needed to have a 50% chance of capturing a ringleader.<br/>
                   This stat accounts for the probability that EMPs will capture at least one ringleader.<br/>
                   <code>
-                    P([X contracts captures a ringleader]) = P([Y EMPs failed to capture]) * P([X contracts captures a ringleader] | [Y EMPs failed to capture]) = 0.5
+                    P([Y contracts captures a ringleader]) &gt;= 0.5<br/>
+                    P([Y contracts fails to capture a ringleader]) = 1 - P([Y contracts captures a ringleader]) &lt;= 1 - 0.5 &lt;= 0.5<br/>
+                    P([X EMPs failed to capture]) * P([Y contracts fails to capture a ringleader] | [X EMPs failed to capture]) &lt;= 0.5<br/>
+                    P([X EMPs failed to capture]) * (1 - 1 / [Number of Remaining Units in the First Pool])^[Y contracts] &lt;= 0.5<br/>
+                    (1 - 1 / [Number of Remaining Units in the First Pool])^[Y contracts] &lt;= 0.5 / P([X EMPs failed to capture])<br/>
+                    [Y contracts] &lt;= log(0.5 / P([X EMPs failed to capture])) / log(1 - 1 / [Number of Remaining Units in the First Pool])
                   </code>
                 </p>
                 
