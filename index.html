@@ -183,6 +183,12 @@
               <div class="py-2">
                 <h2>Median Cooperative Request Contracts Needed to Get At Least One Ringleader</h2>
                 
+                <b-alert show class="mb-2">
+                  This is the median number of contracts needed <b>after EMPs have failed to capture any ringleaders</b>.<br/>
+                  Stated another way: <code>P([X contracts captures a ringleader] | [Y EMPs failed to capture]) = 0.5, solve for X</code><br/>
+                  In contrast, the NGA thread's graphs depict the total ringleader capture probability given some amount of EMPs and cooperative request contracts.
+                </b-alert>
+                
                 <p>
                   If an iteration has reset the pool once, then its "Cooperative Request Contracts Needed" is counted as zero.
                   Otherwise, this is the number of Cooperative Request Contracts necessary to have a 50% chance to capturing the ringleader.<br/>

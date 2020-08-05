@@ -6,7 +6,7 @@ const makeInitialAppData = function() {
     strategies: [...InitialStrategies],
     playerSettings: Object.assign({}, InitialPlayerSettings),
     simulatorSettings: Object.assign({}, InitialSimulatorSettings),
-    systemSettings: Object.assign({}, InitialSystemSettings),
+    systemSettings: {...InitialSystemSettings, captureProbabilities: [...InitialSystemSettings.captureProbabilities]},
 
     hasSimulationResults: false,
     ringleaderProbabilityChartData: {},
