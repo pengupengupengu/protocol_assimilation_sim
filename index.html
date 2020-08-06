@@ -229,7 +229,7 @@ Therefore, P(~A(x)) * P(~B(x, y) | ~A(x)) = 0.5
 
 P(~B(x, y) | ~A(x)) = {
   0 iff n = 0
-  (1 - 1 / n(x))^y otherwise
+  (1 - 1 / n(x))^y otherwise [this is assuming that all strategies reset boxes immediately]
 }
 
 We can ignore P(~A(x)) = 0 and n(x) = 0 because it's clear that y = 0 in those cases.
