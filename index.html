@@ -214,24 +214,30 @@
                   <i>In other words, "how many Cooperative Request Contracts do I need if my luck is medium?"</i>
                 </p>
                 <p>
-                  <code style="white-space: pre;">Let n = number of remaining units in the first pool, x = EMPs used, y = contracts
-Let A(x) = probability that at least one ringleader captured with x EMP, B(x, y) = probability that ringleader captured with x EMP and y contracts
+                  <code style="white-space: pre;">Let x = EMPs used, y = contracts, n(x) = number of remaining units in the first pool after x EMPs.
+Let A(x) = at least one ringleader captured with x EMP, B(x, y) = at least one ringleader captured with x EMP and y contracts.
 
-P(B(x, y)) &gt;= 0.5
-P(~B(x, y)) = 1 - P(B(x, y)) &lt;= 1 - 0.5 &lt;= 0.5
-P(~A(x)) * P(~B(x, y) | ~A(x)) &lt;= 0.5
+P(B(x, y)) = 0.5
+P(~B(x, y)) = 1 - P(B(x, y)) = 1 - 0.5 = 0.5
+P(~B(x, y))
+  = P(~B(x, y) ∩ A(x)) + P(~B(x, y) ∩ ~A(x))
+  = P(A(x)) * P(~B(x, y) | A(x)) + P(~A(x)) * P(~B(x, y) | ~A(x))
+
+~B(x, y) | A(x) can never happen, so P(~B(x, y) | A(x)) = 0
+
+Therefore, P(~A(x)) * P(~B(x, y) | ~A(x)) = 0.5
 
 P(~B(x, y) | ~A(x)) = {
   0 iff n = 0
-  (1 - 1 / n)^y otherwise
+  (1 - 1 / n(x))^y otherwise
 }
 
-We can ignore P(~A(x)) = 0 and n = 0 because it's clear that y = 0 in those cases.
-Suppose that P(~A(x)) > 0 and n > 0...
+We can ignore P(~A(x)) = 0 and n(x) = 0 because it's clear that y = 0 in those cases.
+Suppose that P(~A(x)) > 0 and n(x) > 0...
 
-P(~B(x, y) | ~A(x)) &lt;= 0.5 / P(~A(x))
-(1 - 1 / n)^y &lt;= 0.5 / P(~A(x))
-y &lt;= log(0.5 / P(~A(x))) / log(1 - 1 / n)</code>
+P(~B(x, y) | ~A(x)) = 0.5 / P(~A(x))
+(1 - 1 / n(x))^y = 0.5 / P(~A(x))
+y = log(0.5 / P(~A(x))) / log(1 - 1 / n(x))</code>
                 </p>
                 
                 <results-graph
